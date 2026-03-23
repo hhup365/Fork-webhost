@@ -3,7 +3,7 @@ name: Run Login Script
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 1 * *"  # 每月1号运行一次
+    - cron: "0 0 8 * *"  # 每月8号运行
   push:
     branches:
       - main
@@ -11,6 +11,9 @@ on:
 jobs:
   login:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # ⭐ 必须：允许 push time.txt
 
     steps:
       - name: Checkout 仓库代码
@@ -41,3 +44,16 @@ jobs:
           WEBHOST: ${{ secrets.WEBHOST }}
         run: |
           python login_script.py
+
+      # ================= 新增 step =================
+      - name: 🕒 Keep Actions Alive (time.txt)
+        if: always()
+        run: |
+          echo "$(date '+%Y-%m-%d %H:%M:%S')" > time.txt
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add time.txt
+          git commit -m "chore: update time.txt to keep actions alive" || echo "No changes"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
